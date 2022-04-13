@@ -1,7 +1,5 @@
-%Must clear serial link
 classdef robot
-    %UNTITLED3 Summary of this class goes here
-    %   Detailed explanation goes here
+    % ROBOT represents an instance of our Mojave rover
 
     properties
         camlist = webcamlist;
@@ -52,15 +50,15 @@ classdef robot
             end 
         end 
 
-        function positionData = get_distance_sonar(obj, sensor_index)
-            numTests = 20; % number of datapoints (raw range data) to take in at a given sensor 
-            tempRange = []; % clear tempRange - stores 20 samples of voltage data from a particular sensor 
+        function position_data = get_distance_sonar(obj, sensor_index)
+            num_tests = 20; % number of datapoints (raw range data) to take in at a given sensor 
+            temp_range = []; % clear tempRange - stores 20 samples of voltage data from a particular sensor 
             for j = 1:numTests % loop till numtests data captured
-                tempRange(j) = sense(obj.arduino,obj.sonar_vec(sensor_index)); % collect data from robot sensors and store in tempRange at index j
+                temp_range(j) = sense(obj.arduino,obj.sonar_vec(sensor_index)); % collect data from robot sensors and store in tempRange at index j
                 pause(0.1); % pause for 0.1 sec
             end
-            range_data = median(tempRange); % find median value between 20 raw voltage samples to filter the data. Median is not as easily influenced by outliers compared to avg. 
-            positionData = read_sonar(range_data); % converts median voltage to distance in cm from sensor
+            range_data = median(temp_range); % find median value between 20 raw voltage samples to filter the data. Median is not as easily influenced by outliers compared to avg. 
+            position_data = read_sonar(range_data); % converts median voltage to distance in cm from sensor
         end 
 
         function distance = read_sonar(voltage)
@@ -80,17 +78,17 @@ classdef robot
             range_data =  readVoltage(obj.arduino,obj.sonar_vec);
         end 
 
-        function identify_target_sonar(sensor_index,positionData)
+        function identify_target_sonar(sensor_index,position_data)
             angles = 0; % corresponding angles 
             threshold = 31; % threshold distance for hole in cm 
-            if positionData < threshold % m - if position is close enough to be considered a target
-                disp("Target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle. ID pending."); % it the sensor is not the middle one, A2, and distance is within range for an object, detect object but don't identify it. 
+            if position_ata < threshold % m - if position is close enough to be considered a target
+                disp("Target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle. ID pending."); % it the sensor is not the middle one, A2, and distance is within range for an object, detect object but don't identify it. 
             else
                 disp("Hole found at " + angles(sensor_index) + " degrees"); % if none of the other criteria are met, then it means there is a hole in front of the A2 sensor, which is the only case-scenario in which this line runs
             end 
         end 
 
-        function distance = readSharp(voltage)
+        function distance = read_sharp(voltage)
             % returns distance from voltage
             % power function / transfer equation is derived from calibration curve
             a = 15.56; % 15.04;  
@@ -99,7 +97,7 @@ classdef robot
             distance = a*(voltage^b) + c;
         end
 
-        function identify_target_ir(sensor_index,positionData)
+        function identify_target_ir(sensor_index,position_data)
             angles = [-25 0 25]; % corresponding angles 
             whiteTarget = 7.7; % distance threshold for white target in cm
             greenTarget = 7.3; % distance threshold for green target in cm 
@@ -108,29 +106,29 @@ classdef robot
             yellowUpright = 6; % distance threshold for yellow target - upright orientation in cm 
             threshold = 10; % threshold distance for hole in cm 
         
-            if positionData < threshold % m - if position is close enough to be considered a target
+            if position_data < threshold % m - if position is close enough to be considered a target
                 if sensor_index == 2 % if it's the middle sensor, in port A2
                     % place sensor at 10 cm
-                    if positionData >= whiteTarget % if distance is between the minimum for white target and the max for an object
-                        disp("White target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle."); % it's white 
-                    elseif positionData > greenTarget % if distance is between min for green and min for white 
-                        disp("Green target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle."); % it's green
-                    elseif positionData > yellowUpsideDown % if distance is between min distance for yellow and min for green 
-                        disp("Yellow target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle."); % it's yellow 
-                    elseif positionData > redTarget % if distance is between min dist for red and min for yellow
-                        disp("Red target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle."); % it's red
-                    elseif positionData > yellowUpright % if dist is between min dist for yellow - upright and min for red 
-                        disp("Yellow target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle."); % it's yellow upright
+                    if position_data >= whiteTarget % if distance is between the minimum for white target and the max for an object
+                        disp("White target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle."); % it's white 
+                    elseif position_data > greenTarget % if distance is between min for green and min for white 
+                        disp("Green target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle."); % it's green
+                    elseif position_data > yellowUpsideDown % if distance is between min distance for yellow and min for green 
+                        disp("Yellow target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle."); % it's yellow 
+                    elseif position_data > redTarget % if distance is between min dist for red and min for yellow
+                        disp("Red target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle."); % it's red
+                    elseif position_data > yellowUpright % if dist is between min dist for yellow - upright and min for red 
+                        disp("Yellow target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle."); % it's yellow upright
                     else       
-                        disp("Blue target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle."); % if the dist is shorter than the minimum for yellow - upright, it's blue
+                        disp("Blue target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle."); % if the dist is shorter than the minimum for yellow - upright, it's blue
                     end
                 else 
-                    disp("Target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle. ID pending."); % it the sensor is not the middle one, A2, and distance is within range for an object, detect object but don't identify it. 
+                    disp("Target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle. ID pending."); % it the sensor is not the middle one, A2, and distance is within range for an object, detect object but don't identify it. 
                 end 
         
             elseif sensor_index ~= 2 % if sensor is one of the outer ones (A1 or A3), and distance is greater than initial 10cm threshold for center sensor
-                if positionData < 15 % if one of the outer sensors detects the target at a further distance away 
-                    disp("Target found " + positionData + "cm away at a " + angles(sensor_index) + " degree angle. ID pending.") % display that a target has been found 
+                if position_data < 15 % if one of the outer sensors detects the target at a further distance away 
+                    disp("Target found " + position_data + "cm away at a " + angles(sensor_index) + " degree angle. ID pending.") % display that a target has been found 
                 else 
                     disp("Hole found at " + angles(sensor_index) + " degrees"); % if the distance is greater than 15cm, display that a hole has been found. 
                 end 
@@ -160,7 +158,7 @@ classdef robot
             % and displays it in a stand alone figure 
         
             robotImage = snapshot(obj.robot_cam);
-        end 
+        end
 
         function obj = lidar_shutdown(obj)
             fprintf(obj.lidar, 'QT');
