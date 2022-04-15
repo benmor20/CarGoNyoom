@@ -60,6 +60,52 @@ classdef robot
             disp('Laser scan figure set');
         end 
 
+        function obj = lidar_scan(obj)
+            disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
+            angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
+            angles = angles(541:666);
+            tStart = tic;                                       % start experiment timer
+            iscan = 1;
+            while(iscan == 1)                                    % continuous loop, type and hold cntl-c to break
+                [A] = FunRoboLidarScan(obj.lidar);                  % actual lidar scan range data sored in [A]
+                A = A(541:666);
+                laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
+                laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
+                distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
+                hole_threshold = 500; 
+                maxHoleLen = 0;
+                maxStartAngle = 0; 
+                maxEndAngle = 0; 
+                % drawnow -updates figures and processes any pending callbacks.
+                % Use this command if you modify graphics objects and want to see the
+                % updates on the screen immedicately. Use here to update laser range
+                % draws
+                drawnow                                         % will draw laserRange in open Laser Scan window
+                pause(2)                                      % pause to allow serial communcations to keep up
+                tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
+                if(tElapsed > 10)                               % is experiment goes too long stop sample loop
+                    iscan = 0;
+                end
+            end 
+            ang = 1;
+            while ang < 127
+                if distance_to_object(1,ang) > hole_threshold
+                    [len, startAngle, endAngle] = findHole(ang,distance_to_object,angles);
+                    if len > maxHoleLen
+                        maxHoleLen = len;
+                        maxStartAngle = startAngle; 
+                        maxEndAngle = endAngle;
+                        ang = ang + len;
+                    end
+                else
+                    %findTarget(ang,distance_to_object,angles);
+                end 
+                ang = ang + 1;
+            end
+            disp("Largest hole found between " + maxStartAngle + " degrees and " + maxEndAngle + " degrees.")
+            disp('Lidar scan ended');
+        end 
+
         function obj = setup(obj)
             obj.setup_lidar();
             obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
