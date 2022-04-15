@@ -17,10 +17,10 @@ classdef robot
 
     methods
        
-        function obj = setup_lidar(obj)
-            set(obj.lidar, "Timeout", 2);
+        function obj = lidar_setup(obj)
+            set(obj.lidar, "Timeout", 3);
             set(obj.lidar, "InputBufferSize", 20000);
-            set(obj.lidar, "Terminator", "LF/CR");
+            set(obj.lidar, "Terminator", "LF"); % initially was LF/CR
             % write a set of Hokuyo parameters to obj.lidar to configure it
             fopen(obj.lidar);
             pause(0.3);
