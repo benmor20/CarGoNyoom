@@ -3,7 +3,7 @@ classdef robot
 
     properties
         camlist = webcamlist;
-        robot_cam = webcam(2);
+        %robot_cam = webcam(2);
         %arduino = arduino(arduino_comport, 'Uno', 'Libraries', 'Servo');
         %lidar = serial(lidar_comport,'baudrate',115200);
         %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
