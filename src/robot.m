@@ -38,6 +38,28 @@ classdef robot
             fscanf(obj.lidar);
         end 
 
+        function obj = initialize_lidar_display(obj)
+            % figure creates a stand-alone figure window, The resulting figure is the
+            % current figure for all plots until you change it. 
+            LaserPlot1.figure = figure('Name','Hokuyo URG-04LX data','NumberTitle','off',...
+                'MenuBar','figure','units','normalized','Visible','on')
+            LaserPlot1.axis1=axes('parent',LaserPlot1.figure,'units','normalized','NextPlot','replace');
+            grid(LaserPlot1.axis1,'on')
+            LaserPlot1.axis1.Title.String = 'Laser Scans';
+            LaserPlot1.XLabel.String = 'X Axis';
+            LaserPlot1.YLabel.String = 'Y Axis';
+            % create a primative line object to use plotting lidar data
+            % XData and YData
+            laserRange = line('Parent',LaserPlot1.axis1,'XData',[],'YData',[],'LineStyle','none',...
+                'marker','.','color','b','LineWidth',2);
+            grid on 
+            range = 700;
+            axis([-range range -range range])
+            xlabel('x (mm)')
+            ylabel('y (mm)')
+            disp('Laser scan figure set');
+        end 
+
         function obj = setup(obj)
             obj.setup_lidar();
             obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
