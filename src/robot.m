@@ -61,13 +61,13 @@ classdef robot
         end 
 
         function obj = lidar_scan(obj)
-            disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
+            %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
             angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
             angles = angles(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
-            while(iscan == 1)                                    % continuous loop, type and hold cntl-c to break
-                [A] = FunRoboLidarScan(obj.lidar);                  % actual lidar scan range data sored in [A]
+            while(iscan == 1)                                   % continuous loop, type and hold cntl-c to break
+                [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
                 A = A(541:666);
                 laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
                 laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
@@ -83,27 +83,27 @@ classdef robot
                 drawnow                                         % will draw laserRange in open Laser Scan window
                 pause(2)                                      % pause to allow serial communcations to keep up
                 tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
-                if(tElapsed > 10)                               % is experiment goes too long stop sample loop
+                if(tElapsed > 600)                               % is experiment goes too long stop sample loop
                     iscan = 0;
                 end
             end 
-            ang = 1;
-            while ang < 127
-                if distance_to_object(1,ang) > hole_threshold
-                    [len, startAngle, endAngle] = findHole(ang,distance_to_object,angles);
-                    if len > maxHoleLen
-                        maxHoleLen = len;
-                        maxStartAngle = startAngle; 
-                        maxEndAngle = endAngle;
-                        ang = ang + len;
-                    end
-                else
-                    %findTarget(ang,distance_to_object,angles);
-                end 
-                ang = ang + 1;
-            end
-            disp("Largest hole found between " + maxStartAngle + " degrees and " + maxEndAngle + " degrees.")
-            disp('Lidar scan ended');
+%             ang = 1;
+%             while ang < 127
+%                 if distance_to_object(1,ang) > hole_threshold
+%                     [len, startAngle, endAngle] = findHole(ang,distance_to_object,angles);
+%                     if len > maxHoleLen
+%                         maxHoleLen = len;
+%                         maxStartAngle = startAngle; 
+%                         maxEndAngle = endAngle;
+%                         ang = ang + len;
+%                     end
+%                 else
+%                     %findTarget(ang,distance_to_object,angles);
+%                 end 
+%                 ang = ang + 1;
+%             end
+%             disp("Largest hole found between " + maxStartAngle + " degrees and " + maxEndAngle + " degrees.")
+%             disp('Lidar scan ended');
         end 
 
         function obj = setup(obj)
