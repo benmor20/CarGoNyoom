@@ -2,10 +2,10 @@ classdef robot
     % ROBOT represents an instance of our Mojave rover
 
     properties
-        camlist = webcamlist;
+        %camlist = webcamlist;
         %robot_cam = webcam(2);
         %arduino = arduino(arduino_comport, 'Uno', 'Libraries', 'Servo');
-        %lidar = serial(lidar_comport,'baudrate',115200);
+        lidar = serial('COM27','baudrate',115200);
         %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %steering_motor = servo(arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %pan_servo = servo(arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
