@@ -4,15 +4,16 @@ classdef robot
     properties
         %camlist = webcamlist;
         %robot_cam = webcam(2);
-        %arduino = arduino(arduino_comport, 'Uno', 'Libraries', 'Servo');
-        lidar = serial('COM27','baudrate',115200);
+        arduino = arduino('COM28', 'Nano33BLE', 'Libraries', 'I2C');
+        %lidar = serial('COM27','baudrate',115200);
         %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %steering_motor = servo(arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %pan_servo = servo(arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
-        ir_vec = ['A2','A3','A4','A5','A6','A7'];
-        sonar_vec = ['A0','A1'];
+        ir_vec = ["A1","A2","A3","A6"];
+        sonar_vec = ["A0","A7"];
         lsm_obj
         neo
+        %range_data_ir;
     end
 
     methods
@@ -104,19 +105,69 @@ classdef robot
                 if(tElapsed > 600)                               % is experiment goes too long stop sample loop
                     iscan = 0;
                 end
+                ang_step = 1;
+                max_range =  1000; % mm
+                distance_threshold = 400; % mm
+                while ang_step < length(angles)
+                    if distance_to_object(ang_step) < max_range && distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 0
+                        disp('There is an obstacle near by');
+                        %len = id_target(ang_step,distance_to_object,angles);
+                        %ang_step = ang_step + len;
+                    end
+                    ang_step = ang_step + 1;
+                end  
             end 
         end 
 
+     function len = id_target(start_index,distance_to_object,angles)
+        % distance is an array of distances corresponding to each point -
+        % points are read left to right 
+        stillTarget = true;          
+        tolerance = 500;
+        minDistance = 1000;
+        targetIndex = start_index + 5;
+        last_index = length(distance_to_object);
+        blueTarget = 55; 
+        yellowTarget = 47; 
+        whiteTarget = 46;
+        redTarget = 38;
+        greenTarget = 31;
+        while targetIndex < length(distance_to_object) && stillTarget == true
+            if targetIndex > 1
+                current_target_distance = distance_to_object(1,targetIndex);
+                target_difference = current_target_distance - distance_to_object(1,targetIndex - 1);
+                if abs(target_difference) > tolerance
+                    last_index = targetIndex - 1;
+                    stillTarget = false;
+                end    
+            else
+                start_index = start_index + 1;
+            end 
+            if current_target_distance < minDistance
+                minDistance = current_target_distance;
+            end
+            targetIndex = targetIndex + 1;
+        end 
+        startAngle = rad2deg(angles(start_index));
+        endAngle = rad2deg(angles(last_index));
+        len = last_index - start_index;
+        if len > 6
+            disp(["Target found between angles ", startAngle, " & ", endAngle])
+            disp(len) 
+        end 
+     end 
+
         function obj = setup(obj)
-            obj.setup_lidar();
-            obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
-            obj.neo = NEO_M8U(obj.arduino); % GPS 
+            %obj.setup_lidar();
+            %obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
+            %obj.neo = NEO_M8U(obj.arduino); % GPS 
             for ir_pin = obj.ir_vec
-                configurePin(obj.arduino,ir_pin, 'AnalogInput');
+                configurePin(obj.arduino,ir_pin, 'AnalogInput')
             end
             for sonar_pin = obj.sonar_vec
                 configurePin(obj.arduino,sonar_pin, 'AnalogInput');
             end 
+            disp('Setup complete');
         end 
 
         function position_data = get_distance_sonar(obj, sensor_index)
@@ -139,11 +190,13 @@ classdef robot
             distance = ((voltage-c)/a)^(1000/b);
         end
 
-        function range_data = sense_ir(obj)
-            range_data =  readVoltage(obj.arduino,obj.ir_vec);
+        function range_data_ir = ir_scan(obj)
+            for pin = 1:length(obj.ir_vec)
+                range_data_ir(pin) = readVoltage(obj.arduino,obj.ir_vec(pin));
+            end
         end 
 
-        function range_data = sense_sonar(obj)
+        function range_data_ir = sonar_scan(obj)
             range_data =  readVoltage(obj.arduino,obj.sonar_vec);
         end 
 
