@@ -110,8 +110,8 @@ classdef robot
                 distance_threshold = 200; % mm
                 while ang_step < length(angles)
                     if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
-                        disp("There is an obstacle " + distance_to_object(ang_step) + "mm away.");
-                        %len = id_target(ang_step,distance_to_object,angles);
+                        len = get_length_closest(obj,ang_step,distance_to_object,angles);
+                        disp("There is an obstacle " + len + " mm long " + distance_to_object(ang_step) + "mm away.");
                         %ang_step = ang_step + len;
                     end
                     ang_step = ang_step + 1;
@@ -119,11 +119,11 @@ classdef robot
             end 
         end 
 
-     function len = id_target(start_index,distance_to_object,angles)
+        function len = get_length_closest(obj,start_index,distance_to_object,angles)
         % distance is an array of distances corresponding to each point -
         % points are read left to right 
         stillTarget = true;          
-        tolerance = 500;
+        tolerance = 100;
         minDistance = 1000;
         targetIndex = start_index + 5;
         last_index = length(distance_to_object);
@@ -134,8 +134,8 @@ classdef robot
         greenTarget = 31;
         while targetIndex < length(distance_to_object) && stillTarget == true
             if targetIndex > 1
-                current_target_distance = distance_to_object(1,targetIndex);
-                target_difference = current_target_distance - distance_to_object(1,targetIndex - 1);
+                current_target_distance = distance_to_object(targetIndex);
+                target_difference = current_target_distance - distance_to_object(targetIndex - 1);
                 if abs(target_difference) > tolerance
                     last_index = targetIndex - 1;
                     stillTarget = false;
@@ -150,7 +150,7 @@ classdef robot
         end 
         startAngle = rad2deg(angles(start_index));
         endAngle = rad2deg(angles(last_index));
-        len = last_index - start_index;
+        len = dist(distance_to_object(last_index), distance_to_object(start_index));
         if len > 6
             disp(["Target found between angles ", startAngle, " & ", endAngle])
             disp(len) 
