@@ -5,7 +5,7 @@ classdef robot
         %camlist = webcamlist;
         %robot_cam = webcam(2);
         arduino = arduino('COM28', 'Nano33BLE', 'Libraries', 'I2C');
-        %lidar = serial('COM27','baudrate',115200);
+        lidar = serial('COM27','baudrate',115200);
         %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %steering_motor = servo(arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %pan_servo = servo(arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
@@ -107,10 +107,10 @@ classdef robot
                 end
                 ang_step = 1;
                 max_range =  1000; % mm
-                distance_threshold = 400; % mm
+                distance_threshold = 4; % mm
                 while ang_step < length(angles)
-                    if distance_to_object(ang_step) < max_range && distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 0
-                        disp('There is an obstacle near by');
+                    if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 0
+                        disp("There is an obstacle " + distance_to_object(ang_step) + "mm away.");
                         %len = id_target(ang_step,distance_to_object,angles);
                         %ang_step = ang_step + len;
                     end
