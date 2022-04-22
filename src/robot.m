@@ -85,12 +85,12 @@ classdef robot
 
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
             angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
-            %angles = angles(541:666);
+            angles = angles(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
             while(iscan == 1)                                   % continuous loop, type and hold cntl-c to break
                 [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
-                %A = A(541:666);
+                A = A(541:666);
                 laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
                 laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
                 distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
@@ -107,9 +107,9 @@ classdef robot
                 end
                 ang_step = 1;
                 max_range =  1000; % mm
-                distance_threshold = 4; % mm
+                distance_threshold = 200; % mm
                 while ang_step < length(angles)
-                    if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 0
+                    if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
                         disp("There is an obstacle " + distance_to_object(ang_step) + "mm away.");
                         %len = id_target(ang_step,distance_to_object,angles);
                         %ang_step = ang_step + len;
