@@ -1,13 +1,15 @@
 classdef robot
     % ROBOT represents an instance of our Mojave rover
+    % TODO: 
+    % Convert angle to position
 
     properties
         %camlist = webcamlist;
         %robot_cam = webcam(2);
-        arduino = arduino('COM28', 'Nano33BLE', 'Libraries', 'I2C');
+        arduino = arduino('COM28', 'Nano33BLE', 'Libraries', {'I2C','Servo'});
         lidar = serial('COM27','baudrate',115200);
+        steer_servo;
         %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
-        %steering_motor = servo(arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         %pan_servo = servo(arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
@@ -110,16 +112,18 @@ classdef robot
                 distance_threshold = 200; % mm
                 while ang_step < length(angles)
                     if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
-                        len = get_length_closest(obj,ang_step,distance_to_object,angles);
+                        x = laserRange.XData;
+                        y = laserRange.YData;
+                        len = get_length_closest(obj,ang_step,distance_to_object,angles,x,y);
                         disp("There is an obstacle " + len + " mm long " + distance_to_object(ang_step) + "mm away.");
-                        %ang_step = ang_step + len;
+                        ang_step = ang_step + len;
                     end
                     ang_step = ang_step + 1;
                 end  
             end 
         end 
 
-        function len = get_length_closest(obj,start_index,distance_to_object,angles)
+        function [len,num_steps] = get_length_closest(obj,start_index,distance_to_object,angles,x,y)
         % distance is an array of distances corresponding to each point -
         % points are read left to right 
         stillTarget = true;          
@@ -132,14 +136,18 @@ classdef robot
         whiteTarget = 46;
         redTarget = 38;
         greenTarget = 31;
+        missing_threshold = 3; % steps
+        num_misses = 0;
         while targetIndex < length(distance_to_object) && stillTarget == true
             if targetIndex > 1
                 current_target_distance = distance_to_object(targetIndex);
                 target_difference = current_target_distance - distance_to_object(targetIndex - 1);
-                if abs(target_difference) > tolerance
+                if abs(target_difference) > tolerance && num_misses < missing_threshold
+                    num_misses = num_misses + 1;
+                elseif num_misses >= missing_threshold
                     last_index = targetIndex - 1;
                     stillTarget = false;
-                end    
+                end 
             else
                 start_index = start_index + 1;
             end 
@@ -150,15 +158,17 @@ classdef robot
         end 
         startAngle = rad2deg(angles(start_index));
         endAngle = rad2deg(angles(last_index));
-        len = dist(distance_to_object(last_index), distance_to_object(start_index));
+        points = [x(start_index),y(start_index);x(last_index),y(last_index)];
+        len = sqrt((x(last_index)-x(start_index))^2+(y(last_index)-y(start_index))^2);
+        num_steps = last_index - start_index;
         if len > 6
             disp(["Target found between angles ", startAngle, " & ", endAngle])
-            disp(len) 
         end 
      end 
 
         function obj = setup(obj)
             %obj.setup_lidar();
+            obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             %obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
             %obj.neo = NEO_M8U(obj.arduino); % GPS 
             for ir_pin = obj.ir_vec
@@ -282,6 +292,14 @@ classdef robot
             % and displays it in a stand alone figure 
         
             robotImage = snapshot(obj.robot_cam);
+        end
+
+        function obj = steer(obj,pos)
+            writePosition(obj.steer_servo,pos);
+        end 
+
+        function obj = ang2pos(obj,ang)
+            % 
         end
 
         function obj = lidar_shutdown(obj)
