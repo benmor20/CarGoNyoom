@@ -4,18 +4,17 @@ classdef robot
     % Convert angle to position
 
     properties
-        %camlist = webcamlist;
-        %robot_cam = webcam(2);
-        arduino = arduino('COM28', 'Nano33BLE', 'Libraries', {'I2C','Servo'});
-        lidar = serial('COM27','baudrate',115200);
-        %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);  
-        %pan_servo = servo(arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
-        steer_servo; % 0.35-0.65
-        throttle;
+        robot_cam = webcam(1);
+        camera_params = load("cameraParams.mat").cameraParams;
+        arduino = arduino
+        lidar = serialport('COM5',115200);
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
         lsm_obj
         neo
+        steer_servo; % 0.37-0.66
+        throttle;
+        pan_servo;
         tilt_servo;
         %range_data_ir;
     end
@@ -23,9 +22,13 @@ classdef robot
     methods
 
         function obj = robot()
-            %obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
-            %obj.throttle = servo(obj.arduino, 'D3');
-            obj.tilt_servo = servo(arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            obj.steer(0);
+            obj.throttle = servo(obj.arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            writePosition(obj.throttle, 0.5);
+            obj.tilt_servo = servo(obj.arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            obj.tilt_lidar(0);
+            obj.pan_servo = servo(obj.arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         end
        
         function obj = lidar_setup(obj)
@@ -377,20 +380,33 @@ classdef robot
             %obj.robot_cam.Brightness = 64;
         end 
 
-        function [robotImage] = sense_cam(obj)
+        function [robot_image] = sense_cam(obj)
             % This function acquires a single image from the USBCamera testCam
             % and displays it in a stand alone figure 
         
-            robotImage = snapshot(obj.robot_cam);
+            robot_image = snapshot(obj.robot_cam);
         end
 
-        function obj = steer(obj,pos)
-            writePosition(obj.steer_servo,pos);
+        function [april_tags] = find_april_tags(obj)
+            % find_april_tags finds and returns all april tags in the
+            % camera's current view.
+
+            img = obj.sense_cam();
+            [ids, corners, poses] = readAprilTag(img, 'tag36h11', obj.camera_params.Intrinsics, 164);
+            if isempty(ids)
+                april_tags = [];
+            else
+                april_tags = [april_tag(ids(1), corners(:, :, 1), poses(1))];
+                for i = 2:length(ids)
+                    april_tags(i) = april_tag(ids(i), corners(:, :, i), poses(i));
+                end
+            end
+        end
+
+        function obj = steer(obj,ang)
+            pos = rescale(ang, 0.37, 0.66, 'InputMin', -30, 'InputMax', 30);
+            writePosition(obj.steer_servo, pos);
         end 
-
-        function obj = ang2pos(obj,ang)
-            % 
-        end
 
         function obj = turn_throttle(obj,motor,speed,duration)
             t_start = tic;
@@ -402,6 +418,30 @@ classdef robot
                 end 
             end 
         end 
+
+        function set_speed(obj, speed)
+            if (speed < 0)
+                speed = 0;
+            elseif (speed > 1)
+                speed = 1;
+            end
+            pos = rescale(speed, 0.5, 0.6, 'InputMax', 1, 'InputMin', 0);
+            writePosition(obj.throttle, pos);
+        end
+
+        function obj = tilt_lidar(obj,ang)
+            if (ang < -20)
+                ang = -20;
+            elseif (ang > 90)   % Technically can go a bit further but whatev
+                ang = 90;
+            end
+            l = 0.41;
+            u = 0.95;
+            inmin = 0;
+            inmax = 90;
+            pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
+            writePosition(obj.tilt_servo, pos);
+        end
 
         function obj = lidar_shutdown(obj)
             fprintf(obj.lidar, 'QT');
