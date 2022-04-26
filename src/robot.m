@@ -8,17 +8,25 @@ classdef robot
         %robot_cam = webcam(2);
         arduino = arduino('COM28', 'Nano33BLE', 'Libraries', {'I2C','Servo'});
         lidar = serial('COM27','baudrate',115200);
-        steer_servo;
-        %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+        %drive_motor = servo(arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);  
         %pan_servo = servo(arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+        steer_servo; % 0.35-0.65
+        throttle;
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
         lsm_obj
         neo
+        tilt_servo;
         %range_data_ir;
     end
 
     methods
+
+        function obj = robot()
+            %obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            %obj.throttle = servo(obj.arduino, 'D3');
+            obj.tilt_servo = servo(arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+        end
        
         function obj = lidar_setup(obj)
             set(obj.lidar, "Timeout", 0.1);
@@ -87,12 +95,12 @@ classdef robot
 
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
             angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
-            angles = angles(541:666);
+            %angles = angles(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
             while(iscan == 1)                                   % continuous loop, type and hold cntl-c to break
                 [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
-                A = A(541:666);
+                %A = A(541:666);
                 laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
                 laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
                 distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
@@ -105,6 +113,89 @@ classdef robot
                 pause(2)                                      % pause to allow serial communcations to keep up
                 tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
                 if(tElapsed > 600)                               % is experiment goes too long stop sample loop
+                    iscan = 0;
+                end
+                ang_step = 1;
+                max_range =  1000; % mm
+                distance_threshold = 200; % mm
+                while ang_step < length(angles)
+                    if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
+                        x = laserRange.XData;
+                        y = laserRange.YData;
+                        len = get_length_closest(obj,ang_step,distance_to_object,angles,x,y);
+                        disp("There is an obstacle " + len + " mm long " + distance_to_object(ang_step) + "mm away.");
+                        ang_step = ang_step + len;
+                    end
+                    ang_step = ang_step + 1;
+                end  
+            end 
+        end 
+
+        function obj = lidar_scan_3d(obj)
+            % initialize setup 
+            % figure creates a stand-alone figure window, The resulting figure is the
+            % current figure for all plots until you change it. 
+            LaserPlot1.figure = figure('Name','Hokuyo URG-04LX data','NumberTitle','off',...
+                'MenuBar','figure','units','normalized','Visible','on')
+            LaserPlot1.axis1=axes('parent',LaserPlot1.figure,'units','normalized','NextPlot','replace');
+            grid(LaserPlot1.axis1,'on')
+            LaserPlot1.axis1.Title.String = 'Laser Scans';
+            LaserPlot1.XLabel.String = 'X Axis';
+            LaserPlot1.YLabel.String = 'Y Axis';
+            % create a primative line object to use plotting lidar data
+            % XData and YData
+            laserRange = line('Parent',LaserPlot1.axis1,'XData',[],'YData',[],'LineStyle','none',...
+                'marker','.','color','b','LineWidth',2);
+            grid on 
+            range = 700;
+            axis([-range range -range range])
+            xlabel('x (mm)')
+            ylabel('y (mm)')
+            disp('Laser scan figure set');
+
+            %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
+            angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
+            angles = angles(541:666);
+            tStart = tic;                                       % start experiment timer
+            iscan = 1;
+            while(iscan == 1)                                   % continuous loop, type and hold cntl-c to break
+                [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
+                A = A(541:666);
+                laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
+                laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
+                [r,theta] = cart2pol(laserRange.XData,laserRange.YData);   
+                servo_angle_phi = 0;
+                arm_length = 1;
+                x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
+                y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
+                z = r.*sin(theta); % z coordinate from base
+                plot3(x,z,y,'*') % plot points in 3d (z is out of the page)
+                xlabel('x')
+                ylabel('z')
+                zlabel('y')
+                max_tilt_angle = 0;
+                min_tilt_angle = 10;
+
+                hold on;
+                for phi = min_tilt_angle:max_tilt_angle
+                    writePosition(obj.tilt_servo,phi);
+                    pause(0.2);
+                    x = l.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
+                    y = l.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
+                    z = r.*sin(theta); % z coordinate from base
+                    plot3(x,z,y,'*') 
+                end 
+
+                distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
+                hole_threshold = 500;
+                maxHoleLen = 0;
+                maxStartAngle = 0; 
+                maxEndAngle = 0; 
+                
+                drawnow                                         % will draw laserRange in open Laser Scan window
+                pause(2)                                        % pause to allow serial communcations to keep up
+                tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
+                if(tElapsed > 600)                              % is experiment goes too long stop sample loop
                     iscan = 0;
                 end
                 ang_step = 1;
@@ -168,7 +259,6 @@ classdef robot
 
         function obj = setup(obj)
             %obj.setup_lidar();
-            obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             %obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
             %obj.neo = NEO_M8U(obj.arduino); % GPS 
             for ir_pin = obj.ir_vec
@@ -301,6 +391,17 @@ classdef robot
         function obj = ang2pos(obj,ang)
             % 
         end
+
+        function obj = turn_throttle(obj,motor,speed,duration)
+            t_start = tic;
+            control_flag = 1;  
+            while control_flag == 1                 % measure time (in sec) since start of experiment
+                tElapsed = toc(t_start); 
+                if(tElapsed > duration)                               % is experiment goes too long stop sample loop
+                    control_flag = 0;
+                end 
+            end 
+        end 
 
         function obj = lidar_shutdown(obj)
             fprintf(obj.lidar, 'QT');
