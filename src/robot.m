@@ -24,10 +24,13 @@ classdef robot
         function obj = robot()
             obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             obj.steer(0);
+            
             obj.throttle = servo(obj.arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             writePosition(obj.throttle, 0.5);
+            
             obj.tilt_servo = servo(obj.arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             obj.tilt_lidar(0);
+            
             obj.pan_servo = servo(obj.arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
         end
        
@@ -385,6 +388,7 @@ classdef robot
             % and displays it in a stand alone figure 
         
             robot_image = snapshot(obj.robot_cam);
+            robot_image = rot90(robot_image, 3);    % Camera mounted sideways :/
         end
 
         function [april_tags] = find_april_tags(obj)
@@ -420,13 +424,14 @@ classdef robot
         end 
 
         function set_speed(obj, speed)
-            if (speed < 0)
-                speed = 0;
-            elseif (speed > 1)
-                speed = 1;
+            if (speed <= -1)
+                writePosition(obj.throttle, 0.5);
+            elseif (speed <= 0)
+                writePosition(obj.throttle, 0);
+            else
+                pos = rescale(speed, 0.54, 0.6, 'InputMax', 1, 'InputMin', 0);
+                writePosition(obj.throttle, pos);
             end
-            pos = rescale(speed, 0.5, 0.6, 'InputMax', 1, 'InputMin', 0);
-            writePosition(obj.throttle, pos);
         end
 
         function obj = tilt_lidar(obj,ang)
