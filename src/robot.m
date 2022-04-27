@@ -7,7 +7,7 @@ classdef robot
         robot_cam = webcam(1);
         camera_params = load("cameraParams.mat").cameraParams;
         arduino = arduino
-        lidar = serialport('COM5',115200);
+        lidar = serial('COM5','Baudrate',115200);
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
         lsm_obj
@@ -141,59 +141,34 @@ classdef robot
             % initialize setup 
             % figure creates a stand-alone figure window, The resulting figure is the
             % current figure for all plots until you change it. 
-            LaserPlot1.figure = figure('Name','Hokuyo URG-04LX data','NumberTitle','off',...
-                'MenuBar','figure','units','normalized','Visible','on')
-            LaserPlot1.axis1=axes('parent',LaserPlot1.figure,'units','normalized','NextPlot','replace');
-            grid(LaserPlot1.axis1,'on')
-            LaserPlot1.axis1.Title.String = 'Laser Scans';
-            LaserPlot1.XLabel.String = 'X Axis';
-            LaserPlot1.YLabel.String = 'Y Axis';
             % create a primative line object to use plotting lidar data
             % XData and YData
-            laserRange = line('Parent',LaserPlot1.axis1,'XData',[],'YData',[],'LineStyle','none',...
-                'marker','.','color','b','LineWidth',2);
-            grid on 
-            range = 700;
-            axis([-range range -range range])
-            xlabel('x (mm)')
-            ylabel('y (mm)')
-            disp('Laser scan figure set');
-
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
-            ang = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
-            ang = ang(541:666);
+            theta = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
+            %ang = ang(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
             while (iscan == 1)                                   % continuous loop, type and hold cntl-c to break
-                [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
-                A = A(541:666);
-                laserRange.XData = A.*cos(ang);              % Use trig to find x-coord of range
-                laserRange.YData = A.*sin(ang);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
-                [r,theta] = cart2pol(laserRange.XData,laserRange.YData);   
-                %servo_angle_phi = 0;
+                clf
+                
                 arm_length = 39; % mm
-%                 x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
-%                 y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
-%                 z = r.*sin(theta); % z coordinate from base
-%                 plot3(x,z,y,'*') % plot points in 3d (z is out of the page)
-%                 xlabel('x')
-%                 ylabel('z')
-%                 zlabel('y')
-                min_tilt_angle = 0;
-                max_tilt_angle = 60;
-                increment = 5;
+                min_tilt_angle = -10;
+                max_tilt_angle = 45;
+                increment = 3;
 
-                hold on;
-                for phi = min_tilt_angle:increment:max_tilt_angle
-                    obj.tilt_lidar(phi);
+                for phid = min_tilt_angle:increment:max_tilt_angle
+                    obj.tilt_lidar(phid);
                     pause(0.2);
-                    phi = deg2rad(phi);
+                    [r] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [r]
+                    phi = deg2rad(phid);
                     x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
                     y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
                     z = r.*sin(theta); % z coordinate from base
-                    plot3(x,z,y,'*') 
+                    plot3(x,z,y,'*','MarkerSize',1) 
                     hold on
                 end 
+                break
+                clf;
             end 
 %                 end 
 % 
@@ -223,7 +198,7 @@ classdef robot
 %                     ang_step = ang_step + 1;
 %                 end  
 %             end 
-%         end 
+         end 
 
         function [len,num_steps] = get_length_closest(obj,start_index,distance_to_object,angles,x,y)
         % distance is an array of distances corresponding to each point -
@@ -369,8 +344,8 @@ classdef robot
                 end 
             else
                 disp("Hole found at " + angles(sensor_index) + " degrees"); % if none of the other criteria are met, then it means there is a hole in front of the A2 sensor, which is the only case-scenario in which this line runs
-            end 
-        end 
+            end
+        end
 
         function [] = setup_USB_camera(obj)
             % SETUPUSBCAMERA creates and configures a Webcam to be a simple robot
@@ -459,4 +434,4 @@ classdef robot
             clear obj;
         end
     end 
-end 
+    end
