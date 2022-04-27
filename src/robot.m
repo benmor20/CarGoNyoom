@@ -6,8 +6,8 @@ classdef robot
     properties
         robot_cam = webcam(1);
         camera_params = load("cameraParams.mat").cameraParams;
-        arduino = arduino
-        lidar = serial('COM5','Baudrate',115200);
+        arduino = arduino('COM4',"Nano33BLE","Libraries",{'Servo','I2C'});
+        lidar = serial('COM7','Baudrate',115200);
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
         lsm_obj
@@ -145,7 +145,7 @@ classdef robot
             % XData and YData
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
             theta = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
-            %ang = ang(541:666);
+            %theta = theta(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
             while (iscan == 1)                                   % continuous loop, type and hold cntl-c to break
@@ -153,13 +153,14 @@ classdef robot
                 
                 arm_length = 39; % mm
                 min_tilt_angle = -10;
-                max_tilt_angle = 45;
-                increment = 3;
+                max_tilt_angle = 30;
+                increment = 2;
 
                 for phid = min_tilt_angle:increment:max_tilt_angle
                     obj.tilt_lidar(phid);
-                    pause(0.2);
+                    pause(0.4);
                     [r] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [r]
+                    %r = r(541:666);
                     phi = deg2rad(phid);
                     x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
                     y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
