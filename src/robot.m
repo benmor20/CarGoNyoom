@@ -160,65 +160,70 @@ classdef robot
             disp('Laser scan figure set');
 
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
-            angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
-            angles = angles(541:666);
+            ang = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
+            ang = ang(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
-            while(iscan == 1)                                   % continuous loop, type and hold cntl-c to break
+            while (iscan == 1)                                   % continuous loop, type and hold cntl-c to break
                 [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
                 A = A(541:666);
-                laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
-                laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
+                laserRange.XData = A.*cos(ang);              % Use trig to find x-coord of range
+                laserRange.YData = A.*sin(ang);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
                 [r,theta] = cart2pol(laserRange.XData,laserRange.YData);   
-                servo_angle_phi = 0;
-                arm_length = 1;
-                x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
-                y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
-                z = r.*sin(theta); % z coordinate from base
-                plot3(x,z,y,'*') % plot points in 3d (z is out of the page)
-                xlabel('x')
-                ylabel('z')
-                zlabel('y')
-                max_tilt_angle = 0;
-                min_tilt_angle = 10;
+                %servo_angle_phi = 0;
+                arm_length = 39; % mm
+%                 x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
+%                 y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
+%                 z = r.*sin(theta); % z coordinate from base
+%                 plot3(x,z,y,'*') % plot points in 3d (z is out of the page)
+%                 xlabel('x')
+%                 ylabel('z')
+%                 zlabel('y')
+                min_tilt_angle = 0;
+                max_tilt_angle = 60;
+                increment = 5;
 
                 hold on;
-                for phi = min_tilt_angle:max_tilt_angle
-                    writePosition(obj.tilt_servo,phi);
+                for phi = min_tilt_angle:increment:max_tilt_angle
+                    obj.tilt_lidar(phi);
                     pause(0.2);
-                    x = l.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
-                    y = l.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
+                    phi = deg2rad(phi);
+                    x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
+                    y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
                     z = r.*sin(theta); % z coordinate from base
                     plot3(x,z,y,'*') 
+                    hold on
                 end 
-
-                distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
-                hole_threshold = 500;
-                maxHoleLen = 0;
-                maxStartAngle = 0; 
-                maxEndAngle = 0; 
-                
-                drawnow                                         % will draw laserRange in open Laser Scan window
-                pause(2)                                        % pause to allow serial communcations to keep up
-                tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
-                if(tElapsed > 600)                              % is experiment goes too long stop sample loop
-                    iscan = 0;
-                end
-                ang_step = 1;
-                max_range =  1000; % mm
-                distance_threshold = 200; % mm
-                while ang_step < length(angles)
-                    if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
-                        x = laserRange.XData;
-                        y = laserRange.YData;
-                        len = get_length_closest(obj,ang_step,distance_to_object,angles,x,y);
-                        disp("There is an obstacle " + len + " mm long " + distance_to_object(ang_step) + "mm away.");
-                        ang_step = ang_step + len;
-                    end
-                    ang_step = ang_step + 1;
-                end  
             end 
-        end 
+%                 end 
+% 
+%                 distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
+%                 hole_threshold = 500;
+%                 maxHoleLen = 0;
+%                 maxStartAngle = 0; 
+%                 maxEndAngle = 0; 
+%                 
+%                 drawnow                                         % will draw laserRange in open Laser Scan window
+%                 pause(2)                                        % pause to allow serial communcations to keep up
+%                 tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
+%                 if(tElapsed > 600)                              % is experiment goes too long stop sample loop
+%                     iscan = 0;
+%                 end
+%                 ang_step = 1;
+%                 max_range =  1000; % mm
+%                 distance_threshold = 200; % mm
+%                 while ang_step < length(angles)
+%                     if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
+%                         x = laserRange.XData;
+%                         y = laserRange.YData;
+%                         len = get_length_closest(obj,ang_step,distance_to_object,angles,x,y);
+%                         disp("There is an obstacle " + len + " mm long " + distance_to_object(ang_step) + "mm away.");
+%                         ang_step = ang_step + len;
+%                     end
+%                     ang_step = ang_step + 1;
+%                 end  
+%             end 
+%         end 
 
         function [len,num_steps] = get_length_closest(obj,start_index,distance_to_object,angles,x,y)
         % distance is an array of distances corresponding to each point -
