@@ -31,7 +31,7 @@ classdef robot
             obj.tilt_servo = servo(obj.arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             obj.tilt_lidar(0);
             
-            obj.pan_servo = servo(obj.arduino, 'D3', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            obj.pan_servo = servo(obj.arduino, 'D7', 'MinPulseDuration', 500*10^-6, 'MaxPulseDuration', 2500*10^-6);
         end
        
         function obj = lidar_setup(obj)
