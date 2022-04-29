@@ -25,7 +25,7 @@ classdef robot
             obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             obj.steer(0);
             
-            obj.throttle = servo(obj.arduino, 'D6', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            obj.throttle = servo(obj.arduino, 'D4', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             writePosition(obj.throttle, 0.5);
             
             obj.tilt_servo = servo(obj.arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
@@ -420,6 +420,20 @@ classdef robot
             end
         end
 
+        function obj = pan_camera(obj,ang)
+            if (ang < -135)
+                ang = -135;
+            elseif (ang > 150)
+                ang = 150;
+            end
+            l = 0.47;
+            u = 0.615;
+            inmin = 0;
+            inmax = 45;
+            pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
+            writePosition(obj.pan_servo, pos);
+        end
+        
         function obj = tilt_lidar(obj,ang)
             if (ang < -20)
                 ang = -20;
