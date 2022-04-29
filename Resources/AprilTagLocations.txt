@@ -1,0 +1,21 @@
+April tags
+
+0- in start location
+1- on first pillar
+2- on fifth pillar, middle of cones
+3- on eighth pillar, just after cones
+4- inside granite block just before inner loop cut through
+5- inside granite block just after inner loop cut through
+6- on pillar opposite inner loop cut through
+7- on pillar 3 after previous (if we don’t take the cut through)
+8-on third pillar from break between MAC and CC
+9-on pillar just after the break between MAC and CC
+10- on sixth pillar from break
+11- on ninth pillar from break
+12- on last pillar next to the CC (just after the cut through)
+13- granite block just after cut through
+14- 3rd granite block from cut through
+15- granite block immediately before curb opening
+16- granite block immediately after curb opening
+17- GATE
+18-on cone in middle of cut through- after bridge (also has ID 6 on opposite side of cone for some reason)
