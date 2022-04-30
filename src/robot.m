@@ -166,6 +166,7 @@ classdef robot
                     x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
                     y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
                     z = r.*sin(theta); % z coordinate from base
+                    plot3(x,z,y)
 %                     for i = 1:length(r)
 %                         if x(i) < 2500 && y(i) < 2500 && z(i) < 2500
 %                             plot3(x(i),z(i),y(i),'*','MarkerSize',1) 
