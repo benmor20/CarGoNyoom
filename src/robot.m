@@ -15,6 +15,7 @@ classdef robot
         steer_servo; % 0.37-0.66
         throttle;
         pan_servo;
+        cam_angle = 0;
         tilt_servo;
         %range_data_ir;
     end
@@ -387,9 +388,13 @@ classdef robot
             if isempty(ids)
                 april_tags = [];
             else
-                april_tags = [april_tag(ids(1), corners(:, :, 1), poses(1))];
+                cam_pose = eye(4);
+                cam_pose(1:3, 1:3) = roty(obj.cam_angle);
+                new_pose = rigid3d(poses(1).T * cam_pose);
+                april_tags = [april_tag(ids(1), corners(:, :, 1), new_pose)];
                 for i = 2:length(ids)
-                    april_tags(i) = april_tag(ids(i), corners(:, :, i), poses(i));
+                    pose = rigid3d(poses(i).T * cam_pose);
+                    april_tags(i) = april_tag(ids(i), corners(:, :, i), pose);
                 end
             end
         end
@@ -433,6 +438,7 @@ classdef robot
             inmax = 45;
             pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
             writePosition(obj.pan_servo, pos);
+            obj.cam_angle = ang;
         end
         
         function obj = tilt_lidar(obj,ang)
