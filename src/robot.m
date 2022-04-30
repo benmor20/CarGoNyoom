@@ -6,7 +6,7 @@ classdef robot
     properties
         robot_cam = webcam(1);
         camera_params = load("cameraParams.mat").cameraParams;
-        arduino = arduino('COM4',"Nano33BLE","Libraries",{'Servo','I2C'});
+        arduino = arduino('COM9',"Nano3","Libraries",{'Servo','I2C'});
         lidar = serial('COM7','Baudrate',115200);
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
@@ -32,7 +32,7 @@ classdef robot
             obj.tilt_servo = servo(obj.arduino, 'D2', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             obj.tilt_lidar(0);
             
-            obj.pan_servo = servo(obj.arduino, 'D7', 'MinPulseDuration', 500*10^-6, 'MaxPulseDuration', 2500*10^-6);
+            obj.pan_servo = servo(obj.arduino, 'D7', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 2500*10^-6);
         end
        
         function obj = lidar_setup(obj)
@@ -145,7 +145,7 @@ classdef robot
             % create a primative line object to use plotting lidar data
             % XData and YData
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
-            theta = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
+            theta = linspace(-135, 135-270/682, 682)*pi/180; % Convert Sensor steps to angles for plotting 
             %theta = theta(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
@@ -160,14 +160,22 @@ classdef robot
                 for phid = min_tilt_angle:increment:max_tilt_angle
                     obj.tilt_lidar(phid);
                     pause(0.4);
-                    [r] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [r]
+                    [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
+                    r = A(A < 2500);
+                    %r = ones(size(r))*30;
                     %r = r(541:666);
-                    %theta = theta(r < 2500);
+                    angs = theta(A < 2500);
                     phi = deg2rad(phid);
-                    x = arm_length.*sin(phi)+r.*cos(phi).*cos(theta); % x coordinate from base
-                    y = arm_length.*cos(phi)-r.*sin(phi).*cos(theta); % y coordinate from base
-                    z = r.*sin(theta); % z coordinate from base
-                    plot3(x,z,y)
+                    %lidar_step = linspace(0,270/180*pi,100); % 0-270 degrees in radians
+                    %angs = theta; %- (135*pi/180); % subtracted 135 degrees in radians to make center of scan 0: range is -135 to 135 degrees in radians
+                    [x_lidar_scan,y_lidar_scan] = pol2cart(angs,r); % converting polar coordinates to cartesian to make vector math easier
+                    x_to_base = x_lidar_scan + arm_length; % x direction distance from point to base 
+                    base_frame_vecs = [x_to_base;y_lidar_scan;zeros(1,length(x_to_base))];
+                    rotation_matrix_y = [cos(phi) 0 sin(phi); 0 1 0; -sin(phi) 0 cos(phi)];
+                    robot_frame_vecs = rotation_matrix_y * base_frame_vecs;
+                    plot3(robot_frame_vecs(1,:),robot_frame_vecs(2,:),robot_frame_vecs(3,:),'.');
+                    quiver3(0,0,0,arm_length*cos(-phi),0,arm_length*sin(-phi),'off')
+                    hold on
 %                     for i = 1:length(r)
 %                         if x(i) < 2500 && y(i) < 2500 && z(i) < 2500
 %                             plot3(x(i),z(i),y(i),'*','MarkerSize',1) 
@@ -175,6 +183,10 @@ classdef robot
 %                         end 
 %                     end 
                 end 
+                axis equal
+                xlabel('x')
+                ylabel('y')
+                zlabel('z')
                 break
                 clf;
             end 
@@ -400,7 +412,7 @@ classdef robot
         end
 
         function obj = steer(obj,ang)
-            pos = rescale(ang, 0.37, 0.66, 'InputMin', -30, 'InputMax', 30);
+            pos = rescale(ang, 0.19, 0.81, 'InputMin', -30, 'InputMax', 30);
             writePosition(obj.steer_servo, pos);
         end 
 
@@ -427,15 +439,15 @@ classdef robot
         end
 
         function obj = pan_camera(obj,ang)
-            if (ang < -135)
+            if (ang < -150)
                 ang = -135;
-            elseif (ang > 150)
+            elseif (ang > 45)
                 ang = 150;
             end
-            l = 0.47;
-            u = 0.615;
+            l = 0.25;
+            u = 0.64;
             inmin = 0;
-            inmax = 45;
+            inmax = -90;
             pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
             writePosition(obj.pan_servo, pos);
             obj.cam_angle = ang;
@@ -444,13 +456,13 @@ classdef robot
         function obj = tilt_lidar(obj,ang)
             if (ang < -20)
                 ang = -20;
-            elseif (ang > 90)   % Technically can go a bit further but whatev
-                ang = 90;
+            elseif (ang > 60)
+                ang = 60;
             end
-            l = 0.41;
-            u = 0.95;
+            l = 0.25;
+            u = 1;
             inmin = 0;
-            inmax = 90;
+            inmax = 60;
             pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
             writePosition(obj.tilt_servo, pos);
         end
