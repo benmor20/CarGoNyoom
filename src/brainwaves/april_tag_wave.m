@@ -3,16 +3,16 @@ function [output_vel_vec,output_ang_vec] = april_tag_wave()
 %   Tries to keep april tags on the outside of the course to its left
 %   and april tags on the inside of the course to its right
     
-    INNER_TAGS = [4 5 13 14 15 16 19];         % Tags on the stone blocks
+    INNER_TAGS = [4 5 13 14 15 16];         % Tags on the stone blocks
     OUTER_TAGS = [1 2 3 7 8 9 10 11 12];    % Tags on the pillars
     OVAL_TAGS = [INNER_TAGS OUTER_TAGS];
-    april_tags = evalin('base', 'tags');
-    % mojave = evalin('base', 'mojave');        % Pulls mojave object from base workspace
-    % april_tags = mojave.find_april_tags();
+%     april_tags = evalin('base', 'tags');
+    mojave = evalin('base', 'mojave');        % Pulls mojave object from base workspace
+    april_tags = mojave.find_april_tags();
 
     output_vel_vec = [0 0.5 1 0.8 0.5 0.2 0.1]; % Default vel vec - decent speed, not too fast
-    output_ang_vec = zeros(1, 7);
-    angs = -30:10:30;               % What the brainwave values represent
+    output_ang_vec = zeros(1, 13);
+    angs = -30:5:30;               % What the brainwave values represent
 
     % If no tags, go straight
     num_tags = length(april_tags);

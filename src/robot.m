@@ -1,4 +1,4 @@
-classdef robot
+classdef robot < handle
     % ROBOT represents an instance of our Mojave rover
     % TODO: 
     % Convert angle to position
@@ -15,7 +15,7 @@ classdef robot
         steer_servo; % 0.37-0.66
         throttle;
         pan_servo;
-        cam_angle = 0;
+        cam_angle;
         tilt_servo;
         %range_data_ir;
     end
@@ -33,9 +33,11 @@ classdef robot
             obj.tilt_lidar(0);
             
             obj.pan_servo = servo(obj.arduino, 'D7', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 2500*10^-6);
+            obj.pan_camera(0);
+            obj.cam_angle = 0;
         end
        
-        function obj = lidar_setup(obj)
+        function lidar_setup(obj)
             set(obj.lidar, "Timeout", 0.1);
             set(obj.lidar, "InputBufferSize", 20000);
             set(obj.lidar, "Terminator", "LF/CR"); % initially was LF/CR
@@ -56,7 +58,7 @@ classdef robot
             fscanf(obj.lidar);
         end 
 
-        function obj = initialize_lidar_display(obj)
+        function initialize_lidar_display(obj)
             % figure creates a stand-alone figure window, The resulting figure is the
             % current figure for all plots until you change it. 
             LaserPlot1.figure = figure('Name','Hokuyo URG-04LX data','NumberTitle','off',...
@@ -78,7 +80,7 @@ classdef robot
             disp('Laser scan figure set');
         end 
 
-        function obj = lidar_scan(obj)
+        function lidar_scan(obj)
             % initialize setup 
             % figure creates a stand-alone figure window, The resulting figure is the
             % current figure for all plots until you change it. 
@@ -138,7 +140,7 @@ classdef robot
             end 
         end 
 
-        function obj = lidar_scan_3d(obj)
+        function lidar_scan_3d(obj)
             % initialize setup 
             % figure creates a stand-alone figure window, The resulting figure is the
             % current figure for all plots until you change it. 
@@ -153,18 +155,18 @@ classdef robot
                 clf
                 
                 arm_length = 39; % mm
-                min_tilt_angle = -10;
-                max_tilt_angle = 30;
+                min_tilt_angle = -20;
+                max_tilt_angle = 10;
                 increment = 2;
 
                 for phid = min_tilt_angle:increment:max_tilt_angle
                     obj.tilt_lidar(phid);
                     pause(0.4);
                     [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
-                    r = A(A < 2500);
+                    r = A(A < 20000);
                     %r = ones(size(r))*30;
                     %r = r(541:666);
-                    angs = theta(A < 2500);
+                    angs = theta(A < 20000);
                     phi = deg2rad(phid);
                     %lidar_step = linspace(0,270/180*pi,100); % 0-270 degrees in radians
                     %angs = theta; %- (135*pi/180); % subtracted 135 degrees in radians to make center of scan 0: range is -135 to 135 degrees in radians
@@ -263,7 +265,7 @@ classdef robot
         end 
      end 
 
-        function obj = setup(obj)
+        function setup(obj)
             %obj.setup_lidar();
             %obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
             %obj.neo = NEO_M8U(obj.arduino); % GPS 
@@ -367,7 +369,7 @@ classdef robot
             end
         end
 
-        function [] = setup_USB_camera(obj)
+        function setup_USB_camera(obj)
             % SETUPUSBCAMERA creates and configures a Webcam to be a simple robot
             % vision system. It requires a standard Webcam attached to
             % your computer and takes webcam object name as sole input. 
@@ -388,7 +390,6 @@ classdef robot
             % and displays it in a stand alone figure 
         
             robot_image = snapshot(obj.robot_cam);
-            robot_image = rot90(robot_image, 3);    % Camera mounted sideways :/
         end
 
         function [april_tags] = find_april_tags(obj)
@@ -396,35 +397,27 @@ classdef robot
             % camera's current view.
 
             img = obj.sense_cam();
-            [ids, corners, poses] = readAprilTag(img, 'tag36h11', obj.camera_params.Intrinsics, 164);
-            if isempty(ids)
+            addpath april_tags
+            tags_cam_frame = find_april_tags(img, obj.camera_params.Intrinsics);
+
+            if isempty(tags_cam_frame)
                 april_tags = [];
-            else
-                cam_pose = eye(4);
-                cam_pose(1:3, 1:3) = roty(obj.cam_angle);
-                new_pose = rigid3d(poses(1).T * cam_pose);
-                april_tags = [april_tag(ids(1), corners(:, :, 1), new_pose)];
-                for i = 2:length(ids)
-                    pose = rigid3d(poses(i).T * cam_pose);
-                    april_tags(i) = april_tag(ids(i), corners(:, :, i), pose);
-                end
+                return
+            end
+
+            R = eye(4);
+            R(1:3, 1:3) = roty(obj.cam_angle);
+            to_robot_frame = @(tag) april_tag(tag.id, tag.corners, rigid3d(tag.pose.T * R));
+
+            april_tags = [to_robot_frame(tags_cam_frame(1))];
+            for i = 2:length(tags_cam_frame)
+                april_tags(i) = to_robot_frame(tags_cam_frame(2));
             end
         end
 
-        function obj = steer(obj,ang)
+        function steer(obj,ang)
             pos = rescale(ang, 0.19, 0.81, 'InputMin', -30, 'InputMax', 30);
             writePosition(obj.steer_servo, pos);
-        end 
-
-        function obj = turn_throttle(obj,motor,speed,duration)
-            t_start = tic;
-            control_flag = 1;  
-            while control_flag == 1                 % measure time (in sec) since start of experiment
-                tElapsed = toc(t_start); 
-                if(tElapsed > duration)                               % is experiment goes too long stop sample loop
-                    control_flag = 0;
-                end 
-            end 
         end 
 
         function set_speed(obj, speed)
@@ -438,22 +431,22 @@ classdef robot
             end
         end
 
-        function obj = pan_camera(obj,ang)
+        function pan_camera(obj,ang)
             if (ang < -150)
-                ang = -135;
+                ang = -150;
             elseif (ang > 45)
-                ang = 150;
+                ang = 45;
             end
             l = 0.25;
             u = 0.64;
             inmin = 0;
-            inmax = -90;
+            inmax = 90;
             pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
             writePosition(obj.pan_servo, pos);
             obj.cam_angle = ang;
         end
         
-        function obj = tilt_lidar(obj,ang)
+        function tilt_lidar(obj,ang)
             if (ang < -20)
                 ang = -20;
             elseif (ang > 60)
@@ -467,7 +460,7 @@ classdef robot
             writePosition(obj.tilt_servo, pos);
         end
 
-        function obj = lidar_shutdown(obj)
+        function lidar_shutdown(obj)
             fprintf(obj.lidar, 'QT');
             fclose(obj.lidar);
             clear obj;
