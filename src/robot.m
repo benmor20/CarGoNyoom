@@ -4,20 +4,23 @@ classdef robot < handle
     % Convert angle to position
 
     properties
+        arduino = arduino('COM9',"Nano3","Libraries",{'Servo','I2C'});
+
         robot_cam = webcam(1);
         camera_params = load("cameraParams.mat").cameraParams;
-        arduino = arduino('COM9',"Nano3","Libraries",{'Servo','I2C'});
+        ccm = eye(4);
+
         lidar = serial('COM7','Baudrate',115200);
         ir_vec = ["A1","A2","A3","A6"];
         sonar_vec = ["A0","A7"];
         lsm_obj
         neo
-        steer_servo; % 0.37-0.66
+
+        steer_servo;
         throttle;
         pan_servo;
         cam_angle;
         tilt_servo;
-        %range_data_ir;
     end
 
     methods
@@ -81,62 +84,55 @@ classdef robot < handle
         end 
 
         function lidar_scan(obj)
-            % initialize setup 
+           % initialize setup 
             % figure creates a stand-alone figure window, The resulting figure is the
             % current figure for all plots until you change it. 
-            LaserPlot1.figure = figure('Name','Hokuyo URG-04LX data','NumberTitle','off',...
-                'MenuBar','figure','units','normalized','Visible','on')
-            LaserPlot1.axis1=axes('parent',LaserPlot1.figure,'units','normalized','NextPlot','replace');
-            grid(LaserPlot1.axis1,'on')
-            LaserPlot1.axis1.Title.String = 'Laser Scans';
-            LaserPlot1.XLabel.String = 'X Axis';
-            LaserPlot1.YLabel.String = 'Y Axis';
             % create a primative line object to use plotting lidar data
             % XData and YData
-            laserRange = line('Parent',LaserPlot1.axis1,'XData',[],'YData',[],'LineStyle','none',...
-                'marker','.','color','b','LineWidth',2);
-            grid on 
-            range = 700;
-            axis([-range range -range range])
-            xlabel('x (mm)')
-            ylabel('y (mm)')
-            disp('Laser scan figure set');
-
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
-            angles = (-120:240/682:120-240/682)*pi/180; % Convert Sensor steps to angles for plotting 
-            %angles = angles(541:666);
+            theta = linspace(-135, 135-270/682, 682)*pi/180; % Convert Sensor steps to angles for plotting 
+            %theta = theta(541:666);
             tStart = tic;                                       % start experiment timer
             iscan = 1;
-            while(iscan == 1)                                   % continuous loop, type and hold cntl-c to break
+            while (iscan == 1)                                   % continuous loop, type and hold cntl-c to break
+                arm_length = 39; % mm
+                min_tilt_angle = -20;
+                max_tilt_angle = 10;
+                increment = 2;
+                phid = 0;
+                obj.tilt_lidar(phid)
+                %obj.tilt_lidar(phid);
+                pause(0.4);
                 [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
-                %A = A(541:666);
-                laserRange.XData = A.*cos(angles);              % Use trig to find x-coord of range
-                laserRange.YData = A.*sin(angles);              % Use trig to find y-coord of rangematlab:matlab.internal.language.commandline.executeCode('cd ''C:\Users\busui\OneDrive - Olin College of Engineering\Desktop\FunRobo\STA Lab''')
-                distance_to_object = vecnorm([laserRange.XData; laserRange.YData]);
-                hole_threshold = 500;
-                maxHoleLen = 0;
-                maxStartAngle = 0; 
-                maxEndAngle = 0; 
-                
-                drawnow                                         % will draw laserRange in open Laser Scan window
-                pause(2)                                      % pause to allow serial communcations to keep up
-                tElapsed = toc(tStart);                         % measure time (in sec) since start of experiment
-                if(tElapsed > 600)                               % is experiment goes too long stop sample loop
-                    iscan = 0;
-                end
-                ang_step = 1;
-                max_range =  1000; % mm
-                distance_threshold = 200; % mm
-                while ang_step < length(angles)
-                    if distance_to_object(ang_step) < distance_threshold && distance_to_object(ang_step) > 10
-                        x = laserRange.XData;
-                        y = laserRange.YData;
-                        len = get_length_closest(obj,ang_step,distance_to_object,angles,x,y);
-                        disp("There is an obstacle " + len + " mm long " + distance_to_object(ang_step) + "mm away.");
-                        ang_step = ang_step + len;
-                    end
-                    ang_step = ang_step + 1;
-                end  
+                r = A(A < 20000);
+                %r = ones(size(r))*30;
+                %r = r(541:666);
+                angs = theta(A < 20000);
+                phi = deg2rad(phid);
+                %lidar_step = linspace(0,270/180*pi,100); % 0-270 degrees in radians
+                %angs = theta; %- (135*pi/180); % subtracted 135 degrees in radians to make center of scan 0: range is -135 to 135 degrees in radians
+                [x_lidar_scan,y_lidar_scan] = pol2cart(angs,r); % converting polar coordinates to cartesian to make vector math easier
+                x_to_base = x_lidar_scan + arm_length; % x direction distance from point to base 
+                base_frame_vecs = [x_to_base;y_lidar_scan;zeros(1,length(x_to_base))];
+                rotation_matrix_y = [cos(phi) 0 sin(phi); 0 1 0; -sin(phi) 0 cos(phi)];
+                robot_frame_vecs = rotation_matrix_y * base_frame_vecs;
+                plot(robot_frame_vecs(1,:),robot_frame_vecs(2,:),'.');
+                %quiver3(0,0,0,arm_length*cos(-phi),0,arm_length*sin(-phi),'off')
+                %hold on
+%                     for i = 1:length(r)
+%                         if x(i) < 2500 && y(i) < 2500 && z(i) < 2500
+%                             plot3(x(i),z(i),y(i),'*','MarkerSize',1) 
+%                             hold on
+%                         end 
+%                     end 
+            %hold off
+            axis equal
+            xlim([-5000 5000])
+            ylim([-5000 5000])
+            xlabel('x')
+            ylabel('y')
+            zlabel('z')
+            %clf;
             end 
         end 
 
@@ -383,13 +379,27 @@ classdef robot < handle
             %obj.robot_cam.Exposure = ; % for LifeCam
             % robotCam.WhiteBalanceMode = 'manual'; % for LifeCam
             %obj.robot_cam.Brightness = 64;
-        end 
+        end
 
-        function [robot_image] = sense_cam(obj)
+        function saw_chart = calculate_ccm(obj)
+            % Calibrates the color correction matrix
+            ccm_image = snapshot(obj.robot_cam);
+            try
+                obj.ccm = color_correction_matrix(ccm_image);
+                saw_chart = true;
+            catch
+                saw_chart = false;
+            end
+        end
+
+        function robot_image = sense_cam(obj)
             % This function acquires a single image from the USBCamera testCam
             % and displays it in a stand alone figure 
         
             robot_image = snapshot(obj.robot_cam);
+            if obj.ccm ~= eye(4)
+                robot_image = apply_color_correction(robot_image, obj.ccm);
+            end
         end
 
         function [april_tags] = find_april_tags(obj)
@@ -416,7 +426,7 @@ classdef robot < handle
         end
 
         function steer(obj,ang)
-            pos = rescale(ang, 0.19, 0.81, 'InputMin', -30, 'InputMax', 30);
+            pos = rescale(-ang, 0.19, 0.81, 'InputMin', -30, 'InputMax', 30);
             writePosition(obj.steer_servo, pos);
         end 
 

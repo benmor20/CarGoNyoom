@@ -1,4 +1,4 @@
-function [output_vel_vec,output_ang_vec] = april_tag_wave()
+function [output_vel_vec,output_ang_vec] = april_tag_wave(mojave)
 %april_tag_wave Calculate brainwaves based on april tags
 %   Tries to keep april tags on the outside of the course to its left
 %   and april tags on the inside of the course to its right
@@ -7,10 +7,9 @@ function [output_vel_vec,output_ang_vec] = april_tag_wave()
     OUTER_TAGS = [1 2 3 7 8 9 10 11 12];    % Tags on the pillars
     OVAL_TAGS = [INNER_TAGS OUTER_TAGS];
 %     april_tags = evalin('base', 'tags');
-    mojave = evalin('base', 'mojave');        % Pulls mojave object from base workspace
     april_tags = mojave.find_april_tags();
 
-    output_vel_vec = [0 0.5 1 0.8 0.5 0.2 0.1]; % Default vel vec - decent speed, not too fast
+    output_vel_vec = [0 0.2 0.5 0.8 1 0.9 0.8 0.6 0.5 0.3 0.2 0.1 0.05]; % Default vel vec - decent speed, not too fast
     output_ang_vec = zeros(1, 13);
     angs = -30:5:30;               % What the brainwave values represent
 
