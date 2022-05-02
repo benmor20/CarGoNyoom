@@ -76,9 +76,11 @@ classdef robot < handle
         end 
 
         function range_data_sonar = sonar_scan(obj)
-            for pin = 1:length(obj.sonar_vec)
-                range_data_sonar(pin) = readVoltage(obj.arduino,obj.sonar_vec(pin));
+            %for pin = 1:length(obj.sonar_vec)
+            for i = 1:20
+                ranges(i) = readVoltage(obj.arduino,obj.sonar_vec(1));
             end
+            range_data_sonar = median(ranges);
         end 
 
         function identify_target_sonar(sensor_index,position_data)
