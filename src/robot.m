@@ -6,6 +6,7 @@ classdef robot < handle
     properties
         arduino = arduino('COM9',"Nano3","Libraries",{'Servo','I2C'});
 
+        lidar;
         robot_cam = webcam(1);
         camera_params = load("cameraParams.mat").cameraParams;
         ccm = eye(4);
@@ -18,7 +19,7 @@ classdef robot < handle
         throttle;
         pan_servo;
         cam_angle;
-        tilt_servo;
+    end
     
     methods
 
@@ -28,8 +29,10 @@ classdef robot < handle
             
             obj.throttle = servo(obj.arduino, 'D4', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
             writePosition(obj.throttle, 0.5);
-            
-            obj.tilt_lidar(0);
+            addpath ../lidar
+            addpath lidar
+            obj.lidar = robo_lidar(obj.arduino);
+            obj.lidar.tilt_lidar(0);
             
             obj.pan_servo = servo(obj.arduino, 'D7', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 2500*10^-6);
             obj.pan_camera(0);
@@ -49,24 +52,13 @@ classdef robot < handle
             disp('Setup complete');
         end 
 
-        function position_data = get_distance_sonar(obj, sensor_index)
-            num_tests = 20; % number of datapoints (raw range data) to take in at a given sensor 
-            temp_range = []; % clear tempRange - stores 20 samples of voltage data from a particular sensor 
-            for j = 1:numTests % loop till numtests data captured
-                temp_range(j) = sense(obj.arduino,obj.sonar_vec(sensor_index)); % collect data from robot sensors and store in tempRange at index j
-                pause(0.1); % pause for 0.1 sec
-            end
-            range_data = median(temp_range); % find median value between 20 raw voltage samples to filter the data. Median is not as easily influenced by outliers compared to avg. 
-            position_data = read_sonar(range_data); % converts median voltage to distance in cm from sensor
-        end 
-
-        function distance = read_sonar(voltage)
+        function distance = read_sonar(obj,voltage)
             % returns distance from voltage
             % function / transfer equation is derived from calibration curve
             a = 0.00002336;
             b = 2283; 
             c = 0.04631;
-            distance = ((voltage-c)/a)^(1000/b);
+            distance = ((voltage-c)./a).^(1000./b);
         end
 
         function range_data_ir = ir_scan(obj)
@@ -76,11 +68,13 @@ classdef robot < handle
         end 
 
         function range_data_sonar = sonar_scan(obj)
-            %for pin = 1:length(obj.sonar_vec)
-            for i = 1:20
-                ranges(i) = readVoltage(obj.arduino,obj.sonar_vec(1));
+            ranges = zeros(20, length(obj.sonar_vec));
+            for pin = 1:2
+                for i = 1:20
+                    ranges(i, pin) = readVoltage(obj.arduino,obj.sonar_vec(pin));
+                end
             end
-            range_data_sonar = read_sonar(median(ranges));
+            range_data_sonar = obj.read_sonar(median(ranges));
         end 
 
         function identify_target_sonar(sensor_index,position_data)
@@ -233,4 +227,4 @@ classdef robot < handle
             obj.cam_angle = ang;
         end
     end 
-    end
+end 

@@ -96,18 +96,20 @@ classdef robo_lidar < handle
             theta = linspace(-135, 135-270/682, 682)*pi/180; % Convert Sensor steps to angles for plotting 
             
             phid = 0;
+            arm_length = 39;    %mm
             obj.tilt_lidar(phid)
             [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
-            within_range = A < 20000;
+%             within_range = ((A > 20) .* (A < 20000)) == 1;
+            within_range = A > 40;
             r = A(within_range);
             angs = theta(within_range);
             phi = deg2rad(phid);
             [x_lidar_scan,y_lidar_scan] = pol2cart(angs,r); % converting polar coordinates to cartesian to make vector math easier
             x_to_base = x_lidar_scan + arm_length; % x direction distance from point to base 
-            base_frame_vecs = [x_to_base;y_lidar_scan;zeros(1,length(x_to_base))];
-            rotation_matrix_y = [cos(phi) 0 sin(phi); 0 1 0; -sin(phi) 0 cos(phi)];
+            base_frame_vecs = [x_to_base;y_lidar_scan];
+            rotation_matrix_y = [cos(phi) sin(phi); -sin(phi) cos(phi)];
             robot_frame_vecs = rotation_matrix_y * base_frame_vecs;
-            single_scan = lidarScan(robot_frame_vecs')
+            single_scan = lidarScan(robot_frame_vecs');
         end 
 
 
@@ -177,8 +179,8 @@ classdef robo_lidar < handle
 %                 end  
 %             end 
 
-        function equation_of_line = ransac(lidar_scan_single())
-            
+        function equation_of_line = ransac(scan)
+            equation_of_line = [];
         end 
 
         function [len,num_steps] = get_length_closest(obj,start_index,distance_to_object,angles,x,y)
