@@ -11,14 +11,13 @@ function [lin_vel_vec,ang_vel_vec] = lidar_inside_brainwave(mojave)
     close_threshold = 381; % mm 
     sigma = 5;
     % we want mu to be 0 
-    ang_vel_vec = normpdf(angs,0,sigma);
+    ang_vel_vec = normpdf(theta_real,0,sigma);
     if any(ranges <= 381)
         mu = (ranges - 381) / -12;
-        ang_vel_vec = ang_vel_vec + normpdf(angs,mu,sigma);
-
+        ang_vel_vec = ang_vel_vec + normpdf(theta_real,mu,sigma);
     else
         mu = (ranges - 381) / 12;
-        ang_vel_vec = ang_vel_vec + normpdf(angs,mu,sigma);
+        ang_vel_vec = ang_vel_vec + normpdf(theta_real,mu,sigma);
     end 
-     ang_vel_vec = ang_vel_vec / normpdf(0, 0, sigma);
+    ang_vel_vec = ang_vel_vec / normpdf(0, 0, sigma);
 end
