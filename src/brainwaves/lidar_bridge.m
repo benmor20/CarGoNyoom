@@ -3,7 +3,7 @@ function [lin_vel,ang_pos] = lidar_bridge(arduino)
 %   Detailed explanation goes here
 tilt_angle = 10;
 writePosition(obj.lidar.tilt_servo,tilt_angle);
-scan = lidar.lidar_scan_single()
+scan = lidar.lidar_scan_single();
 ranges = scan.Ranges;
 angs = rad2deg(scan.Angles);
 angs_filtered = angs < 30;
