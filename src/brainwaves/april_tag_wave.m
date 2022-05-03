@@ -4,7 +4,7 @@ function [output_vel_vec,output_ang_vec] = april_tag_wave(mojave)
 %   and april tags on the inside of the course to its right
     
     INNER_TAGS = [4 5 13 14 15 16];         % Tags on the stone blocks
-    OUTER_TAGS = [1 2 3 7 8 9 10 11 12];    % Tags on the pillars
+    OUTER_TAGS = [1 2 3 7 8 9 10 11 12];     % Tags on the pillars
     OVAL_TAGS = [INNER_TAGS OUTER_TAGS];
 %     april_tags = evalin('base', 'tags');
     april_tags = mojave.find_april_tags();

@@ -63,7 +63,7 @@ classdef robot < handle
 
         function range_data_ir = ir_scan(obj)
             for pin = 1:length(obj.ir_vec)
-                range_data_ir(pin) = readVoltage(obj.arduino,obj.ir_vec(pin));
+                range_data_ir(pin) = read_sharp(readVoltage(obj.arduino,obj.ir_vec(pin)));
             end
         end 
 
