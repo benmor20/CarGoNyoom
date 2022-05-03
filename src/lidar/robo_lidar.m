@@ -1,7 +1,7 @@
 classdef robo_lidar < handle 
 
     properties
-        lidar = serial('COM7','Baudrate',115200);
+        lidar = serial('COM10','Baudrate',115200);
         tilt_servo;
     end 
 

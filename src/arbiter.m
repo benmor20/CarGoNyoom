@@ -21,7 +21,8 @@ classdef arbiter
         function [vel_wave, ang_wave] = get_waves(obj)
             vel_wave = zeros(size(obj.vel_result_vec));
             ang_wave = zeros(size(obj.ang_result_vec));
-            for wave_func = obj.brainwave_vec
+            for i = 1:length(obj.brainwave_vec)
+                wave_func = obj.brainwave_vec{i};
                 [vel, ang] = wave_func(obj.mojave);
                 vel_wave = vel_wave + vel;
                 ang_wave = ang_wave + ang;
