@@ -5,13 +5,12 @@ classdef robot < handle
 
     properties
         arduino = arduino('COM9',"Nano3","Libraries",{'Servo','I2C'});
-
         lidar;
         robot_cam = webcam(1);
         camera_params = load("cameraParams.mat").cameraParams;
-        ccm = eye(4);
-        ir_vec = ["A1","A2","A3","A6"];
-        sonar_vec = ["A0","A7"];
+        ccm = zeros(4, 3);
+        ir_vec = [{"A1"}, {"A2"}, {"A3"}, {"A6"}];
+        sonar_vec = [{"A0"}, {"A7"}];
         lsm_obj
         neo
 
@@ -44,10 +43,10 @@ classdef robot < handle
             %obj.lsm_obj = lsm9ds1(obj.arduino,"Bus", 1); % IMU magnetometer
             %obj.neo = NEO_M8U(obj.arduino); % GPS 
             for ir_pin = obj.ir_vec
-                configurePin(obj.arduino,ir_pin, 'AnalogInput')
+                configurePin(obj.arduino, ir_pin{1}, 'AnalogInput')
             end
             for sonar_pin = obj.sonar_vec
-                configurePin(obj.arduino,sonar_pin, 'AnalogInput');
+                configurePin(obj.arduino, sonar_pin{1}, 'AnalogInput');
             end 
             disp('Setup complete');
         end 
@@ -69,11 +68,13 @@ classdef robot < handle
 
         function range_data_sonar = sonar_scan(obj)
             ranges = zeros(20, length(obj.sonar_vec));
-            for pin = 1:2
+            for pin = 1
                 for i = 1:20
-                    ranges(i, pin) = readVoltage(obj.arduino,obj.sonar_vec(pin));
+                    ranges(i, pin) = readVoltage(obj.arduino,obj.sonar_vec{pin});
                 end
             end
+            ranges
+            median(ranges)
             range_data_sonar = obj.read_sonar(median(ranges));
         end 
 
@@ -168,7 +169,7 @@ classdef robot < handle
             % and displays it in a stand alone figure 
         
             robot_image = snapshot(obj.robot_cam);
-            if obj.ccm ~= eye(4)
+            if obj.ccm ~= zeros(4, 3)
                 robot_image = apply_color_correction(robot_image, obj.ccm);
             end
         end

@@ -1,12 +1,12 @@
-function [output_vel_vec, output_ang_vec] = path_wave(mojave)
+function [output_vel_vec, output_ang_vec] = follow_color(mojave, mask_func)
 %PATH_WAVE Brainwave to keep path in the middle of the screen
 
-    output_vel_vec = [0 0.2 0.5 0.8 1 0.9 0.8 0.6 0.5 0.3 0.2 0.1 0.05]; % Default vel vec - decent speed, not too fast
+    output_vel_vec = [0 0.2 0.5 1 0.95 0.9 0.8 0.6 0.5 0.3 0.2 0.1 0.05]; % Default vel vec - decent speed, not too fast
     output_ang_vec = zeros(13, 1);
 
     % Find the mask for the path
     img = mojave.sense_cam();
-    mask = beige_mask(img);
+    mask = mask_func(img);
 
     % Split the mask into 13 segments
     min_height = 800;
