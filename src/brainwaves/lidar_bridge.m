@@ -1,8 +1,8 @@
 function [lin_vel,ang_pos] = lidar_bridge(mojave)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-    tilt_angle = 10;
-    mojave.lidar.tilt_lidar(tilt_angle);
+%     tilt_angle = 10;
+%     mojave.lidar.tilt_lidar(tilt_angle);
     scan = mojave.lidar.lidar_scan_single();
     ranges = scan.Ranges;
     angs = rad2deg(scan.Angles);

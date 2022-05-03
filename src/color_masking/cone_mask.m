@@ -1,4 +1,4 @@
-function [BW,maskedRGBImage] = grass_mask(RGB)
+function [BW,maskedRGBImage] = cone_mask(RGB)
 %createMask  Threshold RGB image using auto-generated code from colorThresholder app.
 %  [BW,MASKEDRGBIMAGE] = createMask(RGB) thresholds image RGB using
 %  auto-generated code from the colorThresholder app. The colorspace and
@@ -14,16 +14,16 @@ function [BW,maskedRGBImage] = grass_mask(RGB)
 I = rgb2hsv(RGB);
 
 % Define thresholds for channel 1 based on histogram settings
-channel1Min = 0.059;
-channel1Max = 0.300;
+channel1Min = 0.008;
+channel1Max = 0.084;
 
 % Define thresholds for channel 2 based on histogram settings
-channel2Min = 0.270;
+channel2Min = 0.267;
 channel2Max = 1.000;
 
 % Define thresholds for channel 3 based on histogram settings
-channel3Min = 0.214;
-channel3Max = 0.772;
+channel3Min = 0.000;
+channel3Max = 1.000;
 
 % Create mask based on chosen histogram thresholds
 sliderBW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...

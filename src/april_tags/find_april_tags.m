@@ -1,6 +1,8 @@
 function [april_tags] = find_april_tags(img, intrinsics)
 %FIND_APRIL_TAGS finds all april tags in an image
-    img = undistortImage(img, intrinsics, "OutputView", "same");
+
+
+%     img = undistortImage(img, intrinsics, "OutputView", "same");
     [ids, corners, poses] = readAprilTag(img, 'tag36h11', intrinsics, 0.165);
     if isempty(ids)
         april_tags = [];

@@ -73,8 +73,6 @@ classdef robot < handle
                     ranges(i, pin) = readVoltage(obj.arduino,obj.sonar_vec{pin});
                 end
             end
-            ranges
-            median(ranges)
             range_data_sonar = obj.read_sonar(median(ranges));
         end 
 
@@ -198,7 +196,7 @@ classdef robot < handle
         end
 
         function steer(obj,ang)
-            pos = rescale(-ang, 0.19, 0.81, 'InputMin', -30, 'InputMax', 30);
+            pos = rescale(-ang, 0.15, 0.85, 'InputMin', -30, 'InputMax', 30);
             writePosition(obj.steer_servo, pos);
         end 
 

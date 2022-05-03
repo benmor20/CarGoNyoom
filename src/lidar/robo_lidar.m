@@ -93,7 +93,7 @@ classdef robo_lidar < handle
             % create a primative line object to use plotting lidar data
             % XData and YData
             %disp('Read and Plot Lidar Data, type and hold ctrl-c to stop')
-            theta = linspace(-135, 135-270/682, 682)*pi/180; % Convert Sensor steps to angles for plotting 
+            theta = linspace(-135, (135-270/682), 682)*pi/180; % Convert Sensor steps to angles for plotting 
             
             phid = 0;
             arm_length = 39;    %mm
@@ -110,6 +110,14 @@ classdef robo_lidar < handle
             rotation_matrix_y = [cos(phi) sin(phi); -sin(phi) cos(phi)];
             robot_frame_vecs = rotation_matrix_y * base_frame_vecs;
             single_scan = lidarScan(robot_frame_vecs');
+
+            try
+                fig = evalin('base', 'lidar_fig');
+                figure(fig);
+                clf;
+                plot(single_scan);
+            catch
+            end
         end 
 
 

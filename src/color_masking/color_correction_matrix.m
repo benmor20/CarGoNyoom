@@ -3,7 +3,7 @@ function ccm = color_correction_matrix(esfr_img)
 %given an image of the eSFR chart from Imatest.
 %   See also apply_color_correction
 
-    chart = esfrChart(esfr_img);
+    chart = esfrChart(esfr_img, 'Style','Extended', 'Sensitivity',0.9);
     [colorTable, ~] = measureColor(chart);
 
     % Get reference to gray, convert to RGB from L*a*b*
