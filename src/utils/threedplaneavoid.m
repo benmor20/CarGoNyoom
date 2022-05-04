@@ -1,11 +1,10 @@
-function [outputArg1,outputArg2] = threedplaneavoid(inputArg1,inputArg2)
+function threedplaneavoid(moj)
 scan = moj.lidar.lidar_scan_3d;
-plane = pcfitplane(scan,1000,[0 1 0],pi/12);
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+[plane_model, inliers, outliers] = pcfitplane(scan,1000,[1 0 0],pi/12);
+plane = select(scan, inliers);
+figure(5);
 pcshow(scan);
 hold off
+figure(6);
 pcshow(plane);
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
 end

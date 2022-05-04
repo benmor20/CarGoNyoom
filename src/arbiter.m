@@ -1,5 +1,5 @@
 %Must clear serial link
-classdef arbiter
+classdef arbiter < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -7,6 +7,8 @@ classdef arbiter
         brainwave_vec
         vel_result_vec
         ang_result_vec
+        last_vwave
+        last_wwave
         mojave
     end
 
@@ -16,13 +18,16 @@ classdef arbiter
             obj.vel_result_vec = vel_result_vec;
             obj.ang_result_vec = ang_result_vec;
             obj.mojave = mojave;
-
+            last_vwave = zeros(size(obj.vel_result_vec));
+            last_wwave = zeros(size(obj.ang_result_vec));
         end
 
         function [vel_wave, ang_wave] = get_wave_sum(obj)
             [vwaves, awaves] = obj.get_waves();
             vel_wave = sum(vwaves, 1);
             ang_wave = sum(awaves, 1);
+            obj.last_vwave = vel_wave;
+            obj.last_wwave = ang_wave;
 
             leg = ["Wave 1"];
             for i = 2:length(obj.brainwave_vec)

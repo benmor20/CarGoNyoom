@@ -115,7 +115,8 @@ classdef robo_lidar < handle
                 fig = evalin('base', 'lidar_fig');
                 figure(fig);
                 clf;
-                plot(single_scan);
+                cart = single_scan.Cartesian;
+                plot(cart(:, 1), cart(:, 2), '.b');
             catch
             end
         end 

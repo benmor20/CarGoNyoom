@@ -7,8 +7,8 @@ function [vwave, wwave] = lidar_wave(mojave)
     r = scan.Ranges;
     theta = -rad2deg(scan.Angles);
 
-    diff = 10;
-    wposs = -60:diff:60;
+    wposs = linspace(-90, 90, 13);
+    diff = wposs(2) - wposs(1);
     meandist = zeros(size(wposs));
     for i = 1:length(wposs)
         ang = wposs(i);
@@ -20,6 +20,23 @@ function [vwave, wwave] = lidar_wave(mojave)
         end
     end
 
-    wwave = meandist / max(meandist);
+%     [~, idx] = min(meandist);
+%     angs = -30:5:30;
+%     sigma = 5;
+%     if idx == 1
+%         wwave = normpdf(angs, 15, sigma);
+%     elseif idx == 3
+%         wwave = normpdf(angs, -15, sigma);
+%     else
+%         wwave = normpdf(angs, -15, sigma) + normpdf(angs, 15, sigma);
+%     end
+%     wwave = wwave / normpdf(0, 0, sigma);
+
+
+    leftpoints = [meandist(2:end) 0];
+    rightpoints = [0 meandist(1:end-1)];
+    total = leftpoints + meandist + rightpoints;
+
+    wwave = total / max(total);
     wwave = wwave * 2;
 end

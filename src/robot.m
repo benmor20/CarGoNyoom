@@ -1,7 +1,5 @@
 classdef robot < handle
     % ROBOT represents an instance of our Mojave rover
-    % TODO: 
-    % Convert angle to position
 
     properties
         arduino = arduino('COM9',"Nano3","Libraries",{'Servo','I2C'});
@@ -15,7 +13,9 @@ classdef robot < handle
         neo
 
         steer_servo;
+        last_angle = 0;
         throttle;
+        last_speed = 0;
         pan_servo;
         cam_angle;
     end
@@ -61,8 +61,23 @@ classdef robot < handle
         end
 
         function range_data_ir = ir_scan(obj)
+            full_data = zeros(10, length(obj.ir_vec));
             for pin = 1:length(obj.ir_vec)
-                range_data_ir(pin) = read_sharp(readVoltage(obj.arduino,obj.ir_vec(pin)));
+                for i = 1:10
+                    full_data(i, pin) = readVoltage(obj.arduino,obj.ir_vec{pin});
+                end
+            end
+            range_data_ir = real(obj.read_sharp(median(full_data)));
+
+            try
+                fig = evalin("base", "ir_fig");
+                figure(fig);
+                clf;
+                plot(range_data_ir, 'ob');
+                ylim([0 10]);
+                xlim([0, 5]);
+                gird on
+            catch
             end
         end 
 
@@ -73,7 +88,12 @@ classdef robot < handle
                     ranges(i, pin) = readVoltage(obj.arduino,obj.sonar_vec{pin});
                 end
             end
-            range_data_sonar = obj.read_sonar(median(ranges));
+            nonzero = ranges(ranges > 0);
+            if isempty(nonzero)
+                range_data_sonar = 0;
+                return
+            end
+            range_data_sonar = real(obj.read_sonar(median(nonzero)));
         end 
 
         function identify_target_sonar(sensor_index,position_data)
@@ -86,13 +106,13 @@ classdef robot < handle
             end 
         end 
 
-        function distance = read_sharp(voltage)
+        function distance = read_sharp(obj, voltage)
             % returns distance from voltage
             % power function / transfer equation is derived from calibration curve
             a = 15.56; % 15.04;  
             b = -0.7572; % -0.775; 
             c = -4.101; % -3.628; 
-            distance = a*(voltage^b) + c;
+            distance = a.*(voltage.^b) + c;
         end
 
         function identify_target_ir(sensor_index,position_data)
@@ -198,6 +218,7 @@ classdef robot < handle
         function steer(obj,ang)
             pos = rescale(-ang, 0.15, 0.85, 'InputMin', -30, 'InputMax', 30);
             writePosition(obj.steer_servo, pos);
+            obj.last_angle = ang;
         end 
 
         function set_speed(obj, speed)
@@ -209,6 +230,7 @@ classdef robot < handle
                 pos = rescale(speed, 0.54, 0.6, 'InputMax', 1, 'InputMin', 0);
                 writePosition(obj.throttle, pos);
             end
+            obj.last_speed = speed;
         end
 
         function pan_camera(obj,ang)
