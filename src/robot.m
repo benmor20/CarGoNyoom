@@ -94,6 +94,15 @@ classdef robot < handle
                 return
             end
             range_data_sonar = real(obj.read_sonar(median(nonzero)));
+
+            try
+                fig = evalin("base", "sonar_fig");
+                figure(fig);
+                plot(range_data_sonar, 'ob');
+                xlim([0 2]);
+                ylim([0 10]);
+            catch
+            end
         end 
 
         function identify_target_sonar(sensor_index,position_data)

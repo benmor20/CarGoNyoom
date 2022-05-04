@@ -1,4 +1,4 @@
-function [lin_vel_vec,ang_vel_vec] = lidar_inside_brainwave(mojave, correction_dist)
+function [lin_vel_vec,ang_vel_vec] = lidar_inside_brainwave(mojave)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
     lin_vel_vec = [0 0.2 0.5 0.8 1 0.9 0.8 0.6 0.5 0.3 0.2 0.1 0.05];
@@ -6,7 +6,7 @@ function [lin_vel_vec,ang_vel_vec] = lidar_inside_brainwave(mojave, correction_d
     scan = mojave.lidar.lidar_scan_single();
     ranges = scan.Ranges;
     theta = rad2deg(scan.Angles);
-    filtered = ranges < 6000 & ranges > 200;
+    filtered = theta <= -15 & ranges < 6000 & ranges > 200;
 %     filtered = ones(1, length(theta), 'logical');
     theta = theta(filtered);
     ranges = ranges(filtered);
