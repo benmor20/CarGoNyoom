@@ -16,7 +16,11 @@ function [output_vel_vec, output_ang_vec] = follow_color(mojave, mask_func)
     for i = 1:13
         mask_slice = mask(min_height:max_height, prevx:xs(i));
         % Resulting ang vec is proportional to amount of color in that segment
-        output_ang_vec(i) = sum(mask_slice(:));
+        if i > 10
+            output_ang_vec(i) = -sum(mask_slice(:));
+        elseif i > 3
+            output_ang_vec(i) = sum(mask_slice(:));
+        end
         prevx = xs(i);
     end
     

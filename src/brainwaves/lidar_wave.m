@@ -7,7 +7,7 @@ function [vwave, wwave] = lidar_wave(mojave)
     r = scan.Ranges;
     theta = -rad2deg(scan.Angles);
 
-    wposs = linspace(-90, 90, 13);
+    wposs = linspace(-60, 60, 13);
     diff = wposs(2) - wposs(1);
     meandist = zeros(size(wposs));
     for i = 1:length(wposs)

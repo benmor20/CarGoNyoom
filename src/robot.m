@@ -23,7 +23,7 @@ classdef robot < handle
     methods
 
         function obj = robot()
-            obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
+            obj.steer_servo = servo(obj.arduino, 'D5', 'MinPulseDuration', 0.9*10^-3, 'MaxPulseDuration', 2.1*10^-3);
             obj.steer(0);
             
             obj.throttle = servo(obj.arduino, 'D4', 'MinPulseDuration', 10*10^-6, 'MaxPulseDuration', 1925*10^-6);
@@ -93,7 +93,7 @@ classdef robot < handle
                 range_data_sonar = 0;
                 return
             end
-            range_data_sonar = real(obj.read_sonar(median(nonzero)));
+            range_data_sonar = median(nonzero);
 
             try
                 fig = evalin("base", "sonar_fig");
@@ -225,7 +225,11 @@ classdef robot < handle
         end
 
         function steer(obj,ang)
-            pos = rescale(-ang, 0.15, 0.85, 'InputMin', -30, 'InputMax', 30);
+            l = 0.5;
+            u = 0;
+            inmin = 0;
+            inmax = 30;
+            pos = l + (ang-inmin)/(inmax-inmin)*(u-l);
             writePosition(obj.steer_servo, pos);
             obj.last_angle = ang;
         end 

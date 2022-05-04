@@ -97,7 +97,6 @@ classdef robo_lidar < handle
             
             phid = 0;
             arm_length = 39;    %mm
-            obj.tilt_lidar(phid)
             [A] = FunRoboLidarScan(obj.lidar);              % actual lidar scan range data sored in [A]
 %             within_range = ((A > 20) .* (A < 20000)) == 1;
             within_range = A > 40;

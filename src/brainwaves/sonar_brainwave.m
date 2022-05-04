@@ -8,10 +8,9 @@ function [sonar_lin_vec,sonar_ang_vec] = sonar_brainwave(mojave)
     
     sonar_ang_vec = zeros(1, 13);
     sigma = 5;
-    if distance_to_wall < 4
-        sonar_ang_vec = normpdf(angs, 15, sigma) / normpdf(0, 0, sigma);
-    else
-        sonar_ang_vec = normpdf(angs, -15, sigma) / normpdf(0, 0, sigma);
+    if distance_to_wall < 0.01
+        sonar_ang_vec = normpdf(angs, 5, sigma);
     end
+    sonar_ang_vec = sonar_ang_vec / normpdf(0, 0, sigma) * 0.5;
 end
 

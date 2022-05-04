@@ -6,7 +6,7 @@ function [lin_vel_vec,ang_vel_vec] = lidar_inside_brainwave(mojave)
     scan = mojave.lidar.lidar_scan_single();
     ranges = scan.Ranges;
     theta = rad2deg(scan.Angles);
-    filtered = theta <= -15 & ranges < 6000 & ranges > 200;
+    filtered = ranges < 6000 & ranges > 200;
 %     filtered = ones(1, length(theta), 'logical');
     theta = theta(filtered);
     ranges = ranges(filtered);
@@ -71,7 +71,7 @@ function [lin_vel_vec,ang_vel_vec] = lidar_inside_brainwave(mojave)
     end
 
     wall_angle = 3*atand(model(1));
-    ang_vel_vec = normpdf(-30:5:30, wall_angle, 5) / normpdf(0, 0, 5);
+    ang_vel_vec = normpdf(-30:5:30, wall_angle, 5) / normpdf(0, 0, 5) * 0.5;
 
 
 %     close_threshold = 2500; % mm
